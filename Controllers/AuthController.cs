@@ -41,8 +41,8 @@ public class AuthController : ControllerBase
             Email = request.Email,
             Phone = request.Phone,
 
-            // TEMPORÁRIO
-            PasswordHash = request.Password
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+
         };
 
         _context.Users.Add(user);
@@ -68,8 +68,11 @@ public class AuthController : ControllerBase
             return Unauthorized("Invalid email or password.");
         }
 
-        // TEMPORÁRIO
-        if (user.PasswordHash != request.Password)
+        var passwordValid = BCrypt.Net.BCrypt.Verify(
+            request.Password,
+            user.PasswordHash);
+
+        if (!passwordValid)
         {
             return Unauthorized("Invalid email or password.");
         }
