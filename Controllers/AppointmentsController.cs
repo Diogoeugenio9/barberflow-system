@@ -38,6 +38,28 @@ public class AppointmentsController : ControllerBase
             return BadRequest("Service not found.");
         }
 
+        if (request.AppointmentDate < DateTime.UtcNow)
+        {
+            return BadRequest("Appointment date cannot be in the past.");
+        }
+
+        var hour = request.AppointmentDate.Hour;
+
+        if (hour < 9 || hour >= 18)
+        {
+            return BadRequest("Appointment outside business hours.");
+        }
+
+        var appointmentExists = await _context.Appointments
+        .AnyAsync(x =>
+        x.BarberId == request.BarberId &&
+        x.AppointmentDate == request.AppointmentDate);
+
+        if (appointmentExists)
+        {
+            return BadRequest("This time is already booked.");
+        }
+
         var appointment = new Appointment
         {
             ClientName = request.ClientName,
@@ -137,6 +159,30 @@ public class AppointmentsController : ControllerBase
         {
             return BadRequest("Service not found.");
         }
+
+        if (request.AppointmentDate < DateTime.UtcNow)
+        {
+            return BadRequest("Appointment date cannot be in the past.");
+        }
+
+        var hour = request.AppointmentDate.Hour;
+
+        if (hour < 9 || hour >= 18)
+        {
+            return BadRequest("Appointment outside business hours.");
+        }
+
+        var appointmentExists = await _context.Appointments
+        .AnyAsync(x =>
+        x.BarberId == request.BarberId &&
+        x.AppointmentDate == request.AppointmentDate &&
+        x.Id != id);
+
+        if (appointmentExists)
+        {
+            return BadRequest("This time is already booked.");
+        }
+
 
         appointment.ClientName = request.ClientName;
         appointment.AppointmentDate = request.AppointmentDate;
