@@ -1,6 +1,7 @@
 ﻿using BarberFlow.API.Context;
 using BarberFlow.API.DTOs.Appointments;
 using BarberFlow.API.Entities;
+using Microsoft.AspNetCore.Authorization;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ namespace BarberFlow.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class AppointmentsController : ControllerBase
 {
     private readonly AppDbContext _context;

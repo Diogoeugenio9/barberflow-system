@@ -1,12 +1,13 @@
 ﻿using BarberFlow.API.Context;
 using BarberFlow.API.DTOs.Services;
 using BarberFlow.API.Entities;
-
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace BarberFlow.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ServicesController : ControllerBase
