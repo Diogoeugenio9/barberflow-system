@@ -2,7 +2,6 @@
 using BarberFlow.API.DTOs.Appointments;
 using BarberFlow.API.Entities;
 using Microsoft.AspNetCore.Authorization;
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,19 +36,26 @@ public class AppointmentsController : ControllerBase
 
         if (service == null)
         {
-            return BadRequest("Service not found.");
+            return BadRequest("Serviço não encontrado.");
         }
 
-        if (request.AppointmentDate < DateTime.UtcNow)
+        if (request.AppointmentDate < DateTime.Now)
         {
-            return BadRequest("Appointment date cannot be in the past.");
+            return BadRequest("A data e o horário do agendamento não podem estar no passado.");
         }
 
         var hour = request.AppointmentDate.Hour;
 
         if (hour < 9 || hour >= 18)
         {
-            return BadRequest("Appointment outside business hours.");
+            return BadRequest("O horário está fora do horário de funcionamento.");
+        }
+
+        var minute = request.AppointmentDate.Minute;
+
+        if(minute != 0 && minute != 30)
+        {
+            return BadRequest("O horário deve ser marcado de 30 em 30 minutos.");
         }
 
         var appointmentExists = await _context.Appointments
@@ -85,6 +91,39 @@ public class AppointmentsController : ControllerBase
         };
 
         return Ok(response);
+    }
+
+    [HttpGet("available")]
+    public async Task<ActionResult> GetAvailable(
+        Guid barberId,
+        DateTime date)
+    {
+        var startOfDay = date.Date;
+        var endOfDay = startOfDay.AddDays(1);
+
+        var appointments = await _context.Appointments
+            .Where(x =>
+                x.BarberId == barberId &&
+                x.AppointmentDate >= startOfDay &&
+                x.AppointmentDate < endOfDay)               
+            .ToListAsync();
+
+        var availableTimes = new List<TimeSpan>();
+
+        for (var time = TimeSpan.FromHours(9);
+             time < TimeSpan.FromHours(18);
+             time = time.Add(TimeSpan.FromMinutes(30)))
+            {
+                availableTimes.Add(time);
+            }
+        foreach (var appointment in appointments)
+        {
+            var appointmentTime = appointment.AppointmentDate.TimeOfDay;
+
+            availableTimes.Remove(appointmentTime);
+        }
+
+        return Ok(availableTimes);
     }
 
     [HttpGet]

@@ -2,7 +2,6 @@
 using BarberFlow.API.DTOs;
 using BarberFlow.API.Entities;
 using BarberFlow.API.Services.Auth;
-
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
