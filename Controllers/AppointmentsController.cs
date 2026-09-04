@@ -4,6 +4,7 @@ using BarberFlow.API.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace BarberFlow.API.Controllers;
 
@@ -68,12 +69,20 @@ public class AppointmentsController : ControllerBase
             return BadRequest("This time is already booked.");
         }
 
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            return Unauthorized();
+        }
+
         var appointment = new Appointment
         {
             ClientName = request.ClientName,
             AppointmentDate = request.AppointmentDate,
             BarberId = request.BarberId,
-            ServiceId = request.ServiceId
+            ServiceId = request.ServiceId,
+            UserId = Guid.Parse(userId)
         };
 
         _context.Appointments.Add(appointment);
