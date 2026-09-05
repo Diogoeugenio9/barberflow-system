@@ -54,19 +54,22 @@ public class AppointmentsController : ControllerBase
 
         var minute = request.AppointmentDate.Minute;
 
-        if(minute != 0 && minute != 30)
+        if (minute % 10 != 0)
         {
-            return BadRequest("O horário deve ser marcado de 30 em 30 minutos.");
+            return BadRequest("O horário deve ser marcado de 10 em 10 minutos.");
         }
 
+        var appointmentEnd = request.AppointmentDate.AddMinutes(30);
+
         var appointmentExists = await _context.Appointments
-        .AnyAsync(x =>
-        x.BarberId == request.BarberId &&
-        x.AppointmentDate == request.AppointmentDate);
+            .AnyAsync(x =>
+                x.BarberId == request.BarberId &&
+                x.AppointmentDate < appointmentEnd &&
+                x.AppointmentDate.AddMinutes(30) > request.AppointmentDate);
 
         if (appointmentExists)
         {
-            return BadRequest("This time is already booked.");
+            return BadRequest("Este horário está ocupado.");
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -104,8 +107,8 @@ public class AppointmentsController : ControllerBase
 
     [HttpGet("available")]
     public async Task<ActionResult> GetAvailable(
-        Guid barberId,
-        DateTime date)
+    Guid barberId,
+    DateTime date)
     {
         var startOfDay = date.Date;
         var endOfDay = startOfDay.AddDays(1);
@@ -114,22 +117,27 @@ public class AppointmentsController : ControllerBase
             .Where(x =>
                 x.BarberId == barberId &&
                 x.AppointmentDate >= startOfDay &&
-                x.AppointmentDate < endOfDay)               
+                x.AppointmentDate < endOfDay)
             .ToListAsync();
 
         var availableTimes = new List<TimeSpan>();
 
-        for (var time = TimeSpan.FromHours(9);
-             time < TimeSpan.FromHours(18);
-             time = time.Add(TimeSpan.FromMinutes(30)))
+        for (
+            var time = TimeSpan.FromHours(9);
+            time <= TimeSpan.FromHours(17).Add(TimeSpan.FromMinutes(30));
+            time = time.Add(TimeSpan.FromMinutes(10)))
+        {
+            var appointmentDateTime = date.Date.Add(time);
+            var appointmentEnd = appointmentDateTime.AddMinutes(30);
+
+            var ocupado = appointments.Any(x =>
+                x.AppointmentDate < appointmentEnd &&
+                x.AppointmentDate.AddMinutes(30) > appointmentDateTime);
+
+            if (!ocupado)
             {
                 availableTimes.Add(time);
             }
-        foreach (var appointment in appointments)
-        {
-            var appointmentTime = appointment.AppointmentDate.TimeOfDay;
-
-            availableTimes.Remove(appointmentTime);
         }
 
         return Ok(availableTimes);
@@ -138,7 +146,15 @@ public class AppointmentsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<AppointmentResponseDto>>> GetAll()
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId == null)
+        {
+            return Unauthorized();
+        }
+
         var appointments = await _context.Appointments
+            .Where(x => x.UserId == Guid.Parse(userId))
             .Include(x => x.Barber)
             .Include(x => x.Service)
             .Select(appointment => new AppointmentResponseDto
@@ -150,6 +166,7 @@ public class AppointmentsController : ControllerBase
                 ServiceName = appointment.Service.Name,
                 CreatedAt = appointment.CreatedAt
             })
+            .OrderBy(x => x.AppointmentDate)
             .ToListAsync();
 
         return Ok(appointments);
