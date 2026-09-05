@@ -17,5 +17,7 @@ public class Appointment
     public Guid UserId { get; set; }
     public User User { get; set; } = null!;
 
+    public string Status { get; set; } = "Agendado";
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

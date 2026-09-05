@@ -85,7 +85,8 @@ public class AppointmentsController : ControllerBase
             AppointmentDate = request.AppointmentDate,
             BarberId = request.BarberId,
             ServiceId = request.ServiceId,
-            UserId = Guid.Parse(userId)
+            UserId = Guid.Parse(userId),
+            Status = "Agendado"
         };
 
         _context.Appointments.Add(appointment);
@@ -117,7 +118,8 @@ public class AppointmentsController : ControllerBase
             .Where(x =>
                 x.BarberId == barberId &&
                 x.AppointmentDate >= startOfDay &&
-                x.AppointmentDate < endOfDay)
+                x.AppointmentDate < endOfDay &&
+                x.Status == "Agendado")
             .ToListAsync();
 
         var availableTimes = new List<TimeSpan>();
@@ -164,7 +166,8 @@ public class AppointmentsController : ControllerBase
                 AppointmentDate = appointment.AppointmentDate,
                 BarberName = appointment.Barber.Name,
                 ServiceName = appointment.Service.Name,
-                CreatedAt = appointment.CreatedAt
+                CreatedAt = appointment.CreatedAt,
+                Status = appointment.Status
             })
             .OrderBy(x => x.AppointmentDate)
             .ToListAsync();
@@ -269,6 +272,32 @@ public class AppointmentsController : ControllerBase
         };
 
         return Ok(response);
+    }
+
+    [HttpPut("{id}/cancel")]
+    public async Task<ActionResult> Cancel(Guid id)
+    {
+        var appointment = await _context.Appointments
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (appointment == null)
+        {
+            return NotFound("Appointment not found.");
+        }
+
+        if (appointment.Status == "Cancelado")
+        {
+            return BadRequest("Este agendamento já está cancelado.");
+        }
+
+        appointment.Status = "Cancelado";
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Agendamento cancelado com sucesso."
+        });
     }
 
     [HttpDelete("{id}")]
