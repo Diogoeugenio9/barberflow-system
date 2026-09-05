@@ -64,6 +64,7 @@ public class AppointmentsController : ControllerBase
         var appointmentExists = await _context.Appointments
             .AnyAsync(x =>
                 x.BarberId == request.BarberId &&
+                x.Status == "Agendado" &&
                 x.AppointmentDate < appointmentEnd &&
                 x.AppointmentDate.AddMinutes(30) > request.AppointmentDate);
 
@@ -243,10 +244,11 @@ public class AppointmentsController : ControllerBase
         }
 
         var appointmentExists = await _context.Appointments
-        .AnyAsync(x =>
-        x.BarberId == request.BarberId &&
-        x.AppointmentDate == request.AppointmentDate &&
-        x.Id != id);
+            .AnyAsync(x =>
+                x.BarberId == request.BarberId &&
+                x.Status == "Agendado" &&
+                x.AppointmentDate == request.AppointmentDate &&
+                x.Id != id);
 
         if (appointmentExists)
         {
