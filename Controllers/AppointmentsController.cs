@@ -176,6 +176,29 @@ public class AppointmentsController : ControllerBase
         return Ok(appointments);
     }
 
+    [HttpGet("admin")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<List<AppointmentResponseDto>>> GetAllForAdmin()
+    {
+        var appointments = await _context.Appointments
+            .Include(x => x.Barber)
+            .Include(x => x.Service)
+            .Select(appointment => new AppointmentResponseDto
+            {
+                Id = appointment.Id,
+                ClientName = appointment.ClientName,
+                AppointmentDate = appointment.AppointmentDate,
+                BarberName = appointment.Barber.Name,
+                ServiceName = appointment.Service.Name,
+                CreatedAt = appointment.CreatedAt,
+                Status = appointment.Status
+            })
+            .OrderBy(x => x.AppointmentDate)
+            .ToListAsync();
+
+        return Ok(appointments);
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<AppointmentResponseDto>> GetById(Guid id)
     {
